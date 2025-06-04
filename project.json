@@ -5,7 +5,8 @@
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.4.3]",
-    "UiPath.Testing.Activities": "[25.4.0]"
+    "UiPath.Testing.Activities": "[25.4.0]",
+    "UiPath.UIAutomation.Activities": "[25.10.4]"
   },
   "webServices": [],
   "entitiesStores": [],
@@ -42,7 +43,7 @@
     },
     "fileInfoCollection": [
       {
-        "editingStatus": "InProgress",
+        "editingStatus": "Publishable",
         "testCaseId": "89222d2a-7245-45e6-b0c0-05bdeb3f6e93",
         "testCaseType": "TestCase",
         "fileName": "TestCase.xaml"
