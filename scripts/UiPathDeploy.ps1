@@ -1,113 +1,199 @@
 <#
 .SYNOPSIS 
-    Deploy NuGet package files to UiPath Orchestrator (Cloud or On-Prem)
+    Deploy NuGet package files to orchestrator
 
 .DESCRIPTION 
-    This script uses UiPath CLI to deploy .nupkg packages to Orchestrator.
+    This script is to deploy NuGet package files (*.nupkg) to Cloud or On-Prem orchestrator.
 
 .PARAMETER packages_path 
-     Required. Path to the package file or folder.
+     Required. The path to a folder containing packages, or to a package file.
 
 .PARAMETER orchestrator_url 
-    Required. Orchestrator base URL.
+    Required. The URL of the Orchestrator instance.
 
 .PARAMETER orchestrator_tenant 
-    Required. Tenant name.
+    Required. The tenant of the Orchestrator instance.
 
 .PARAMETER orchestrator_user
-    Orchestrator username (for basic auth).
+    Required. The Orchestrator username used for authentication. Must be used together with the password.
 
 .PARAMETER orchestrator_pass
-    Orchestrator password (for basic auth).
+    Required. The Orchestrator password used for authentication. Must be used together with the username
 
 .PARAMETER UserKey
-    OAuth refresh token (for Cloud authentication).
+    Required. The Orchestrator OAuth2 refresh token used for authentication. Must be used together with the account name and client id.
 
 .PARAMETER account_name
-    Cloud account name (for Cloud authentication).
+    Required. The Orchestrator CloudRPA account name. Must be used together with the refresh token and client id.
 
 .PARAMETER folder_organization_unit
-    Optional. The Orchestrator folder name.
+    The Orchestrator folder (organization unit).
 
 .PARAMETER environment_list
-    Optional. Comma-separated list of environments to deploy to.
+    The comma-separated list of environments to deploy the package to. If the environment does not belong to the default folder (organization unit) it must be prefixed with the folder name, e.g. AccountingTeam\TestEnvironment
 
 .PARAMETER language
-    Optional. Language of Orchestrator session.
+    The orchestrator language.
 
 .PARAMETER disableTelemetry
-    Optional. Disable telemetry reporting.
+    Disable telemetry data.
 
+.EXAMPLE
+SYNTAX
+    . '\UiPathDeploy.ps1' <packages_path> <orchestrator_url> <orchestrator_tenant> [-orchestrator_user <orchestrator_user> -orchestrator_pass <orchestrator_pass>] [-UserKey <UserKey> -account_name <account_name>] [-folder_organization_unit <folder_organization_unit>] [-environment_list <environment_list>] [-language <language>]
+Examples:
+    . '\UiPathDeploy.ps1' "C:\UiPath\Project 1" "https://uipath-orchestrator.myorg.com" default -orchestrator_user admin -orchestrator_pass 123456
+    . '\UiPathDeploy.ps1' "C:\UiPath\Project\Package.1.0.6820.22047.nupkg" "https://uipath-orchestrator.myorg.com" default -orchestrator_user admin -orchestrator_pass 123456 -folder_organization_unit OurOrganization
+    . '\UiPathDeploy.ps1' "C:\UiPath\Project\Package.1.0.6820.22047.nupkg" "https://uipath-orchestrator.myorg.com" default -UserKey a7da29a2c93a717110a82 -account_name myAccount
+    . '\UiPathDeploy.ps1' "C:\UiPath\Project\TestsPackage.1.0.6820.22047.nupkg" "https://uipath-orchestrator.myorg.com" default -orchestrator_user admin -orchestrator_pass 123456 -environment_list SAPEnvironment,ExcelAutomationEnvironment -language en-US
 #>
+Param (
 
-param (
-    [Parameter(Mandatory = $true)]
-    [string]$packages_path,
+    #Required
+	[string] $packages_path = "", # Required. The path to a folder containing packages, or to a package file.
+	[string] $orchestrator_url = "", #Required. The URL of the Orchestrator instance.
+	[string] $orchestrator_tenant = "", #Required. The tenant of the Orchestrator instance.
 
-    [Parameter(Mandatory = $true)]
-    [string]$orchestrator_url,
+    #cloud - Required
+    [string] $account_name = "", #Required. The Orchestrator CloudRPA account name. Must be used together with the refresh token and client id.
+	[string] $UserKey = "", #Required. The Orchestrator OAuth2 refresh token used for authentication. Must be used together with the account name and client id.
+    
+    #On prem - Required
+    [string] $orchestrator_user = "", #Required. The Orchestrator username used for authentication. Must be used together with the password.
+	[string] $orchestrator_pass = "", #Required. The Orchestrator password used for authentication. Must be used together with the username
+	
+	[string] $folder_organization_unit = "", #The Orchestrator folder (organization unit).
+	[string] $language = "", #The orchestrator language.  
+    [string] $environment_list = "", #The comma-separated list of environments to deploy the package to. If the environment does not belong to the default folder (organization unit) it must be prefixed with the folder name, e.g. AccountingTeam\TestEnvironment
+    [string] $disableTelemetry = "" #Disable telemetry data.   
+    
+    
 
-    [Parameter(Mandatory = $true)]
-    [string]$orchestrator_tenant,
-
-    [Parameter(Mandatory = $true)]
-    [string]$UserKey,
-
-    [Parameter(Mandatory = $true)]
-    [string]$account_name
 )
-
-function Write-Log {
-    param ([string]$Message)
-    Write-Host "$(Get-Date -Format "G") `t $Message"
+function WriteLog
+{
+	Param ($message, [switch] $err)
+	
+	$now = Get-Date -Format "G"
+	$line = "$now`t$message"
+	$line | Add-Content $debugLog -Encoding UTF8
+	if ($err)
+	{
+		Write-Host $line -ForegroundColor red
+	} else {
+		Write-Host $line
+	}
 }
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$debugLog = "$scriptPath\orchestrator-package-deploy.log"
 
-Write-Log "Starting UiPath deployment process..."
-Write-Log "Validating parameters..."
+#Verifying UiPath CLI folder
+$uipathCLI = "$scriptPath\uipathcli\lib\net461\uipcli.exe"
+if (-not(Test-Path -Path $uipathCLI -PathType Leaf)) {
+    WriteLog "UiPath CLI does not exist in this folder. Attempting to download it..."
+    try {
+        New-Item -Path "$scriptPath" -ItemType "directory" -Name "uipathcli";
+        Invoke-WebRequest "https://www.myget.org/F/uipath-dev/api/v2/package/UiPath.CLI/1.0.7802.11617" -OutFile "$scriptPath\\uipathcli\\cli.zip";
+        Expand-Archive -LiteralPath "$scriptPath\\uipathcli\\cli.zip" -DestinationPath "$scriptPath\\uipathcli";
+        WriteLog "UiPath CLI is downloaded and extracted in folder $scriptPath\\uipathcli"
+        if (-not(Test-Path -Path $uipathCLI -PathType Leaf)) {
+            WriteLog "Unable to locate uipath cli after it is downloaded."
+            exit 1
+        }
+    }
+    catch {
+        WriteLog ("Error Occured : " + $_.Exception.Message) -err $_.Exception
+        exit 1
+    }
+    
+}
+WriteLog "-----------------------------------------------------------------------------"
+WriteLog "uipcli location :   $uipathCLI"
 
-if (-not (Test-Path $packages_path)) {
-    Write-Log "ERROR: Package path '$packages_path' does not exist."
+$ParamList = New-Object 'Collections.Generic.List[string]'
+
+if($packages_path -eq "" -or $orchestrator_url -eq "" -or $orchestrator_tenant -eq "") 
+{
+    WriteLog "Fill the required paramters"
     exit 1
 }
 
-# Create CLI folder if not already present
-$cliFolder = Join-Path $PSScriptRoot "uipathcli"
-if (-not (Test-Path $cliFolder)) {
-    Write-Log "UiPath CLI does not exist. Downloading..."
-    $cliUrl = "https://uipathcli.blob.core.windows.net/public/uipathcli.zip"
-    $zipPath = Join-Path $PSScriptRoot "uipathcli.zip"
-    Invoke-WebRequest -Uri $cliUrl -OutFile $zipPath
-    Expand-Archive -Path $zipPath -DestinationPath $cliFolder
-    Remove-Item $zipPath
-    Write-Log "UiPath CLI downloaded to: $cliFolder"
-}
+if($account_name -eq "" -or $UserKey -eq "")
+{
+    if($orchestrator_user -eq "" -or $orchestrator_pass -eq "")
+    {
+        WriteLog "Fill the required paramters"
 
-# Find CLI executable
-$cliExe = Join-Path $cliFolder "lib/net461/uipcli.exe"
-if (-not (Test-Path $cliExe)) {
-    Write-Log "ERROR: UiPath CLI executable not found at $cliExe"
-    exit 1
-}
-
-# Authenticate with Orchestrator
-Write-Log "Authenticating with Orchestrator..."
-& $cliExe config set --url "$orchestrator_url" --account-name "$account_name" --tenant "$orchestrator_tenant"
-& $cliExe login --user-key "$UserKey"
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Log "ERROR: Failed to authenticate with UiPath Orchestrator"
-    exit 1
-}
-
-# Deploy all .nupkg files in package path
-$nupkgFiles = Get-ChildItem -Path $packages_path -Filter *.nupkg
-foreach ($pkg in $nupkgFiles) {
-    Write-Log "Publishing package: $($pkg.Name)"
-    & $cliExe packages deploy --file-path "$($pkg.FullName)"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log "ERROR: Failed to publish $($pkg.Name)"
         exit 1
     }
 }
 
-Write-Log "Deployment completed successfully!"
+#Building uipath cli paramters
+$ParamList.Add("package")
+$ParamList.Add("deploy")
+$ParamList.Add($packages_path)
+$ParamList.Add($orchestrator_url)
+$ParamList.Add($orchestrator_tenant)
+
+if($account_name -ne ""){
+    $ParamList.Add("-a")
+    $ParamList.Add($account_name)
+}
+if($UserKey -ne ""){
+    $ParamList.Add("-t")
+    $ParamList.Add($UserKey)
+
+}
+if($orchestrator_user -ne ""){
+    $ParamList.Add("-u")
+    $ParamList.Add($orchestrator_user)
+}
+if($orchestrator_pass -ne ""){
+    $ParamList.Add("-p")
+    $ParamList.Add($orchestrator_pass)
+}
+if($folder_organization_unit -ne ""){
+    $ParamList.Add("-o")
+    $ParamList.Add($folder_organization_unit)
+}
+if($environment_list -ne ""){
+    $ParamList.Add("-e")
+    $ParamList.Add($environment_list)
+}
+
+if($language -ne ""){
+    $ParamList.Add("-l")
+    $ParamList.Add($language)
+}
+
+if($disableTelemetry -ne ""){
+    $ParamList.Add("-y")
+    $ParamList.Add($disableTelemetry)
+}
+
+#mask sensitive info before logging 
+$ParamMask = New-Object 'Collections.Generic.List[string]'
+$ParamMask.AddRange($ParamList)
+$secretIndex = $ParamMask.IndexOf("-p");
+if($secretIndex -ge 0){
+    $ParamMask[$secretIndex + 1] = ("*" * ($orchestrator_pass.Length))
+}
+$secretIndex = $ParamMask.IndexOf("-t");
+if($secretIndex -ge 0){
+    $ParamMask[$secretIndex + 1] = $userKey.Substring(0, 4) + ("*" * ($userKey.Length - 4))
+}
+
+#log cli call with parameters
+WriteLog "Executing $uipathCLI $ParamMask"
+
+#call uipath cli 
+& "$uipathCLI" $ParamList.ToArray()
+
+if($LASTEXITCODE -eq 0)
+{
+    WriteLog "Done!"
+    Exit 0
+}else {
+    WriteLog "Unable to deploy project. Exit code $LASTEXITCODE"
+    Exit 1
+}
