@@ -74,10 +74,10 @@ jobs:
         run: |
           pwsh "${{ github.workspace }}/scripts/UiPathDeploy.ps1" `
             -packages_path "${{ github.workspace }}/package" `
-            -OrchUrl "${{ env.ORCH_URL }}" `
-            -Tenant "${{ env.ORCH_TENANT }}" `
-            -UserKey "${{ env.ORCH_USER_KEY }}" `
-            -AccountName "${{ env.ORCH_ACC_NAME }}"
+            -orchestrator_url "${{ env.ORCHESTRATOR_URL }}" `
+            -orchestrator_tenant "${{ env.ORCHESTRATOR_TENANT }}" `
+            -UserKey "${{ env.USERKEY }}" `
+            -account_name "${{ env.ACCOUNT_NAME }}"
 
   test-uipath-published-package:
     needs: publish-uipath-nuget-package
@@ -92,8 +92,8 @@ jobs:
         shell: pwsh
         run: |
           pwsh "${{ github.workspace }}/scripts/UiPathRunTest.ps1" `
-            -OrchUrl "${{ env.ORCH_URL }}" `
-            -Tenant "${{ env.ORCH_TENANT }}" `
-            -UserKey "${{ env.ORCH_USER_KEY }}" `
-            -AccountName "${{ env.ORCH_ACC_NAME }}" `
+            -OrchUrl "${{ env.ORCHESTRATOR_URL }}" `
+            -Tenant "${{ env.ORCHESTRATOR_TENANT }}" `
+            -UserKey "${{ env.USERKEY }}" `
+            -AccountName "${{ env.ACCOUNT_NAME }}" `
             -TestSet "TestSet1"
