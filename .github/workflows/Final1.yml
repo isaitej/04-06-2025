@@ -73,7 +73,7 @@ jobs:
         shell: pwsh
         run: |
           pwsh "${{ github.workspace }}/scripts/UiPathDeploy.ps1" `
-            -PackagesPath "${{ github.workspace }}/package" `
+            -packages_path "${{ github.workspace }}/package" `
             -OrchUrl "${{ env.ORCH_URL }}" `
             -Tenant "${{ env.ORCH_TENANT }}" `
             -UserKey "${{ env.ORCH_USER_KEY }}" `
