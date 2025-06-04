@@ -1,0 +1,99 @@
+name: mainelopment workflow
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_NAME: 04-06-2025                         
+  PROJECT_FOLDER: Shared
+  ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
+  ORCH_TENANT: ${{ secrets.UIPATHTENANTNAME }}
+  ORCH_CLIENT_ID: ${{ secrets.UIPATHCLIENTID }}
+  ORCH_USER_KEY: ${{ secrets.UIPATHUSERKEY }}
+  ORCH_ACC_NAME: ${{ secrets.UIPATHACCOUNTNAME }}
+
+jobs:
+  print-details:
+    runs-on: ubuntu-latest
+    steps:
+      - name: echo-default-env-variables
+        run: |
+          echo "Home: ${HOME}"
+          echo "GITHUB_WORKFLOW: ${GITHUB_WORKFLOW}"
+          echo "GITHUB_ACTIONS: ${GITHUB_ACTIONS}"
+          echo "GITHUB_ACTOR: ${GITHUB_ACTOR}"
+          echo "GITHUB_REPOSITORY: ${GITHUB_REPOSITORY}"
+          echo "GITHUB_EVENT_NAME: ${GITHUB_EVENT_NAME}"
+          echo "GITHUB_WORKSPACE: ${GITHUB_WORKSPACE}"
+          echo "GITHUB_SHA: ${GITHUB_SHA}"
+          echo "GITHUB_REF: ${GITHUB_REF}"
+
+  cleaner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up previous run
+        run: |
+          echo "Cleaning workspace"
+          rm -rf "${{ github.workspace }}"
+
+  build-uipath-nuget-package:
+    needs: cleaner
+    runs-on: windows-latest
+    steps: 
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Build NuGet Package
+        shell: pwsh
+        run: |
+          pwsh "${{ github.workspace }}/scripts/UiPathPack.ps1" `
+            -ProjectJsonPath "${{ github.workspace }}/project.json" `
+            -DestinationFolder "${{ github.workspace }}/package"
+
+      - name: Upload UiPath Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifacts
+          path: |
+            package/*
+            scripts/*.ps1
+
+  publish-uipath-nuget-package:
+    needs: build-uipath-nuget-package
+    runs-on: windows-latest
+    steps: 
+      - name: Download UiPath Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Artifacts
+
+      - name: Publish NuGet Package to Orchestrator
+        shell: pwsh
+        run: |
+          pwsh "${{ github.workspace }}/scripts/UiPathDeploy.ps1" `
+            -PackagePath "${{ github.workspace }}/package" `
+            -OrchestratorUrl "${{ env.ORCH_URL }}" `
+            -Tenant "${{ env.ORCH_TENANT }}" `
+            -UserKey "${{ env.ORCH_USER_KEY }}" `
+            -AccountForUserKey "${{ env.ORCH_ACC_NAME }}"
+
+  test-uipath-published-package:
+    needs: publish-uipath-nuget-package
+    runs-on: windows-latest  
+    steps: 
+      - name: Download UiPath Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Artifacts
+
+      - name: Test the Package With Test Cases 
+        shell: pwsh
+        run: |
+          pwsh "${{ github.workspace }}/scripts/UiPathRunTest.ps1" `
+            -OrchestratorUrl "${{ env.ORCH_URL }}" `
+            -Tenant "${{ env.ORCH_TENANT }}" `
+            -UserKey "${{ env.ORCH_USER_KEY }}" `
+            -AccountForUserKey "${{ env.ORCH_ACC_NAME }}" `
+            -TestSet "TestSet1"
