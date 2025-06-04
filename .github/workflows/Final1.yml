@@ -33,9 +33,9 @@ jobs:
   cleaner:
     runs-on: ubuntu-latest
     steps:
-      - name: Clean up previous run
+      - name: Runner workspace path
         run: |
-          echo "Cleaning workspace"
+          echo "Cleaning up previous run"
           rm -rf "${{ github.workspace }}"
 
   build-uipath-nuget-package:
@@ -49,8 +49,8 @@ jobs:
         shell: pwsh
         run: |
           pwsh "${{ github.workspace }}/scripts/UiPathPack.ps1" `
-            -ProjectJsonPath "${{ github.workspace }}/project.json" `
-            -DestinationFolder "${{ github.workspace }}/package"
+            "${{ github.workspace }}/project.json" `
+            -destination_folder "${{ github.workspace }}/package"
 
       - name: Upload UiPath Artifacts
         uses: actions/upload-artifact@v4
@@ -74,10 +74,10 @@ jobs:
         run: |
           pwsh "${{ github.workspace }}/scripts/UiPathDeploy.ps1" `
             -PackagePath "${{ github.workspace }}/package" `
-            -OrchestratorUrl "${{ env.ORCH_URL }}" `
+            -OrchUrl "${{ env.ORCH_URL }}" `
             -Tenant "${{ env.ORCH_TENANT }}" `
             -UserKey "${{ env.ORCH_USER_KEY }}" `
-            -AccountForUserKey "${{ env.ORCH_ACC_NAME }}"
+            -AccountName "${{ env.ORCH_ACC_NAME }}"
 
   test-uipath-published-package:
     needs: publish-uipath-nuget-package
@@ -92,8 +92,8 @@ jobs:
         shell: pwsh
         run: |
           pwsh "${{ github.workspace }}/scripts/UiPathRunTest.ps1" `
-            -OrchestratorUrl "${{ env.ORCH_URL }}" `
+            -OrchUrl "${{ env.ORCH_URL }}" `
             -Tenant "${{ env.ORCH_TENANT }}" `
             -UserKey "${{ env.ORCH_USER_KEY }}" `
-            -AccountForUserKey "${{ env.ORCH_ACC_NAME }}" `
+            -AccountName "${{ env.ORCH_ACC_NAME }}" `
             -TestSet "TestSet1"
