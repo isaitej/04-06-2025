@@ -60,40 +60,25 @@ jobs:
             package/*
             scripts/*.ps1
 
-  publish-uipath-nuget-package:
+publish-uipath-nuget-package:
     needs: build-uipath-nuget-package
     runs-on: windows-latest
     steps: 
       - name: Download UiPath Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v2
         with:
           name: Artifacts
-
-      - name: Publish NuGet Package to Orchestrator
+      - name: Publish Nuget Package to DEV
         shell: pwsh
-        run: |
-          pwsh "${{ github.workspace }}/scripts/UiPathDeploy.ps1" `
-            -packages_path "${{ github.workspace }}/package" `
-            -orchestrator_url "${{ env.ORCHESTRATOR_URL }}" `
-            -orchestrator_tenant "${{ env.ORCHESTRATOR_TENANT }}" `
-            -UserKey "${{ env.USERKEY }}" `
-            -account_name "${{ env.ACCOUNT_NAME }}"
-
-  test-uipath-published-package:
+        run: ${{ github.workspace }}\scripts\UiPathDeploy.ps1 ${{ github.workspace }}\package ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}}
+   
+test-uipath-published-package:
     needs: publish-uipath-nuget-package
     runs-on: windows-latest  
     steps: 
       - name: Download UiPath Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v2
         with:
           name: Artifacts
-
       - name: Test the Package With Test Cases 
-        shell: pwsh
-        run: |
-          pwsh "${{ github.workspace }}/scripts/UiPathRunTest.ps1" `
-            -OrchUrl "${{ env.ORCHESTRATOR_URL }}" `
-            -Tenant "${{ env.ORCHESTRATOR_TENANT }}" `
-            -UserKey "${{ env.USERKEY }}" `
-            -AccountName "${{ env.ACCOUNT_NAME }}" `
-            -TestSet "TestSet1"
+        run: ${{ github.workspace }}\scripts\\UiPathRunTest.ps1  ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -testset "04062025TestSet"
