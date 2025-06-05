@@ -8,11 +8,11 @@ on:
 env:
   PROJECT_NAME: 04-06-2025                         
   PROJECT_FOLDER: Shared
-  ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
+  ORCH_URL: https://cloud.uipath.com/
   ORCH_TENANT: DefaultTenant
-  ORCH_CLIENT_ID: 21a6955b-2fbe-4cd4-8d71-4124dff739ce
+  ORCH_CLIENT_ID: 21a6955b-2fbe-4cd4-8d71-4124dff739ce.Trim()
   ORCH_USER_KEY: R5r2Ua2*XFJWu53Y
-  ORCH_ACC_NAME: Test
+  ORCH_ACC_NAME: testbfsvyha
 
 jobs:
   print-details:
