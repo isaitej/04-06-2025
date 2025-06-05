@@ -10,9 +10,9 @@ env:
   PROJECT_FOLDER: Shared
   ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
   ORCH_TENANT: DefaultTenant
-  ORCH_CLIENT_ID: 21a6955b-2fbe-4cd4-8d71-4124dff739ce.Trim()
+  ORCH_CLIENT_ID: 21a6955b-2fbe-4cd4-8d71-4124dff739ce
   ORCH_USER_KEY: rt_564CE433B9B9C01AB3E52650F616BFBB8A291340446B3AF14A939634A462C4D9-1
-  ORCH_ACC_NAME: testbfsvyha
+  ORCH_ACC_NAME: Test
 
 jobs:
   print-details:
