@@ -10,6 +10,7 @@ env:
   PROJECT_FOLDER: Shared
   ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
   ORCH_TENANT: DefaultTenant
+  ORCH_USER_KEY: be8334e4-cac1-4581-a683-01384ef7f59f
   ORCH_ACC_NAME: testbfsvyha
 
 jobs:
@@ -36,39 +37,10 @@ jobs:
           echo "Cleaning up previous run"
           rm -rf "${{ github.workspace }}"
 
-  get-uipath-token:
-    runs-on: windows-latest
-    outputs:
-      userkey: ${{ steps.gettoken.outputs.token }}
-    steps:
-      - name: Get UiPath Access Token
-        id: gettoken
-        shell: pwsh
-        run: |
-          $clientId = "21a6955b-2fbe-4cd4-8d71-4124dff739ce"
-          $clientSecret = "MvNiHINKUYaG6eAV"
-          $scope = "OR.Jobs"
-          
-          # Create form-urlencoded body string
-          $body = "grant_type=client_credentials&client_id=$clientId&client_secret=$clientSecret&scope=$scope"
-          
-          # Request token
-          $response = Invoke-RestMethod -Uri "https://cloud.uipath.com/identity_/connect/token" `
-            -Method Post `
-            -Body $body `
-            -ContentType "application/x-www-form-urlencoded"
-          
-          # Write token to output
-          Write-Output "Access token: $($response.access_token)"
-          # Set output for workflow
-          Write-Output "::set-output name=token::$($response.access_token)"
-
   build-uipath-nuget-package:
-    needs: [cleaner, get-uipath-token]
+    needs: cleaner
     runs-on: windows-latest
-    env:
-      ORCH_USER_KEY: ${{ needs.get-uipath-token.outputs.userkey }}
-    steps:
+    steps: 
       - name: Check out repository code
         uses: actions/checkout@v4
 
@@ -90,12 +62,6 @@ jobs:
   publish-uipath-nuget-package:
     needs: build-uipath-nuget-package
     runs-on: windows-latest
-    env:
-      ORCH_USER_KEY: ${{ needs.get-uipath-token.outputs.userkey }}
-      ORCH_URL: ${{ env.ORCH_URL }}
-      ORCH_TENANT: ${{ env.ORCH_TENANT }}
-      ORCH_ACC_NAME: ${{ env.ORCH_ACC_NAME }}
-      PROJECT_FOLDER: ${{ env.PROJECT_FOLDER }}
     steps: 
       - name: Download UiPath Artifacts
         uses: actions/download-artifact@v4
@@ -103,33 +69,15 @@ jobs:
           name: Artifacts
       - name: Publish Nuget Package to main
         shell: pwsh
-        run: |
-          $packagePath = "${{ github.workspace }}\package"
-          $orchUrl = "${{ env.ORCH_URL }}"
-          $tenant = "${{ env.ORCH_TENANT }}"
-          $userKey = "${{ env.ORCH_USER_KEY }}"
-          $accountName = "${{ env.ORCH_ACC_NAME }}"
-          $folderOrgUnit = "${{ env.PROJECT_FOLDER }}"
-          & "${{ github.workspace }}\scripts\UiPathDeploy.ps1" $packagePath $orchUrl $tenant -UserKey $userKey -account_name $accountName -folder_organization_unit $folderOrgUnit
-
+        run: ${{ github.workspace }}\scripts\UiPathDeploy.ps1 ${{ github.workspace }}\package ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -folder_organization_unit ${{env.PROJECT_FOLDER}}
+   
   test-uipath-published-package:
     needs: publish-uipath-nuget-package
-    runs-on: windows-latest
-    env:
-      ORCH_USER_KEY: ${{ needs.get-uipath-token.outputs.userkey }}
-      ORCH_URL: ${{ env.ORCH_URL }}
-      ORCH_TENANT: ${{ env.ORCH_TENANT }}
-      ORCH_ACC_NAME: ${{ env.ORCH_ACC_NAME }}
-    steps:
+    runs-on: windows-latest  
+    steps: 
       - name: Download UiPath Artifacts
         uses: actions/download-artifact@v4
         with:
           name: Artifacts
       - name: Test the Package With Test Cases 
-        shell: pwsh
-        run: |
-          $orchUrl = "${{ env.ORCH_URL }}"
-          $tenant = "${{ env.ORCH_TENANT }}"
-          $userKey = "${{ env.ORCH_USER_KEY }}"
-          $accountName = "${{ env.ORCH_ACC_NAME }}"
-          & "${{ github.workspace }}\scripts\UiPathRunTest.ps1" $orchUrl $tenant -UserKey $userKey -account_name $accountName -testset "04062025TestSet"
+        run: ${{ github.workspace }}\scripts\\UiPathRunTest.ps1  ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -testset "04062025TestSet"
