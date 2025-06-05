@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  PROJECT_NAME: 04-06-2025                         
+  PROJECT_NAME: 04-06-2025            
   PROJECT_FOLDER: Shared
   ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
   ORCH_TENANT: DefaultTenant
