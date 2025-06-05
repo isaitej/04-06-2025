@@ -11,7 +11,7 @@ env:
   ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
   ORCH_TENANT: DefaultTenant
   ORCH_CLIENT_ID: 21a6955b-2fbe-4cd4-8d71-4124dff739ce.Trim()
-  ORCH_USER_KEY: Ht7yJ2)q2AdA2(!h
+  ORCH_USER_KEY: Ht7yJ2)q2AdA2(!h.Trim()
   ORCH_ACC_NAME: testbfsvyha
 
 jobs:
