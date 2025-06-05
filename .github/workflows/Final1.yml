@@ -68,7 +68,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Artifacts
-      - name: Publish Nuget Package to DEV
+      - name: Publish Nuget Package to main
         shell: pwsh
         run: ${{ github.workspace }}\scripts\UiPathDeploy.ps1 ${{ github.workspace }}\package ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}}
    
