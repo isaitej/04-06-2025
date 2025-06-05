@@ -11,7 +11,7 @@ env:
   ORCH_URL: https://cloud.uipath.com/testbfsvyha/DefaultTenant
   ORCH_TENANT: ${{ secrets.UIPATHTENANTNAME }}
   ORCH_CLIENT_ID: ${{ secrets.UIPATHCLIENTID }}
-  ORCH_USER_KEY: ${{ secrets.UIPATHUSERKEY }}
+  ORCH_USER_KEY: "21a6955b-2fbe-4cd4-8d71-4124dff739ce"
   ORCH_ACC_NAME: ${{ secrets.UIPATHACCOUNTNAME }}
 
 jobs:
