@@ -58,7 +58,7 @@
 
 .EXAMPLE
 SYNTAX
-    . '\UiPathDeploy.ps1'  <packages_path> <orchestrator_url> <orchestrator_tenant> [-orchestrator_user <orchestrator_user> -orchestrator_pass <orchestrator_pass>] [-UserKey <auth_token> -account_name <account_name>] [-accountForApp <account_for_app> -applicationId <application_id> -applicationSecret <application_secret> -applicationScope <applicationScope>] [-folder_organization_unit <folder_organization_unit>] [-environment_list <environment_list>] [-language <language>]
+    . '\UiPathDeploy.ps1'  <packages_path> <orchestrator_url> <orchestrator_tenant> [-orchestrator_user <orchestrator_user> -orchestrator_pass <orchestrator_pass>] [-UserKey <auth_token> -account_name <account_name>] [-applicationId <application_id> -applicationSecret <application_secret> -applicationScope <applicationScope>] [-folder_organization_unit <folder_organization_unit>] [-environment_list <environment_list>] [-language <language>]
 
   Examples:
     . '\UiPathDeploy.ps1' "C:\UiPath\Project 1" "https://uipath-orchestrator.myorg.com" default -orchestrator_user admin -orchestrator_pass 123456
@@ -181,7 +181,7 @@ if($packages_path -eq "" -or $orchestrator_url -eq "" -or $orchestrator_tenant -
     exit 1
 }
 
-if($accountForApp -eq "" -or $applicationId -eq "" -or $applicationSecret -eq "" -or $applicationScope -eq "")
+if( $applicationId -eq "" -or $applicationSecret -eq "" -or $applicationScope -eq "")
 {
     if($account_name -eq "" -or $UserKey -eq "")
     {
@@ -201,6 +201,18 @@ $ParamList.Add("`"$packages_path`"")
 $ParamList.Add($orchestrator_url)
 $ParamList.Add($orchestrator_tenant)
 
+if($applicationId -ne ""){
+    $ParamList.Add("--applicationId")
+    $ParamList.Add($applicationId)
+}
+if($applicationSecret -ne ""){
+    $ParamList.Add("--applicationSecret")
+    $ParamList.Add($applicationSecret)
+}
+if($applicationScope -ne ""){
+    $ParamList.Add("--applicationScope")
+    $ParamList.Add("`"$applicationScope`"")
+}
 if($account_name -ne ""){
     $ParamList.Add("-a")
     $ParamList.Add($account_name)
