@@ -13,6 +13,7 @@ env:
   ORCH_ACC_NAME: uipatntvskhu
   CLIENT_ID: 9765da03-dd43-4915-8847-8fe03d64bfa8
   CLIENT_SECRET: W#fS4(J!tbTZeZ*v
+  ACCOUNT_APP: 4472062
   SCOPE: OR.Jobs
 
 jobs:
@@ -94,8 +95,11 @@ jobs:
             "${{ github.workspace }}\package" `
             "${{ env.ORCH_URL }}" `
             "${{ env.ORCH_TENANT }}" `
-            -Token $token `
+            -UserKey $token `
             -account_name "${{ env.ORCH_ACC_NAME }}" `
+            -applicationId "${{ env.CLIENT_ID}}" `
+            -applicationSecret "${{ env.CLIENT_SECRET}}" `
+            -applicationScope "${{ env.SCOPE}}" `
             -folder_organization_unit "${{ env.PROJECT_FOLDER }}"
 
   test-uipath-published-package:
