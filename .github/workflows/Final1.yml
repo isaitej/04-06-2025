@@ -8,7 +8,7 @@ on:
 env:
   PROJECT_NAME: 04062025
   PROJECT_FOLDER: Default
-  ORCH_URL: https://cloud.uipath.com/testbfsvyha/NewTenant/orchestrator_/
+  ORCH_URL: https://cloud.uipath.com/testbfsvyha/NewTenant/
   ORCH_TENANT: NewTenant
   ORCH_USER_KEY: be8334e4-cac1-4581-a683-01384ef7f59f
   ORCH_ACC_NAME: testbfsvyha
