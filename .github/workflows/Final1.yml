@@ -10,7 +10,7 @@ env:
   PROJECT_FOLDER: Shared
   ORCH_URL: https://cloud.uipath.com/uipatntvskhu/DefaultTenant/
   ORCH_TENANT: DefaultTenant
-  ORCH_USER_KEY: 9765da03-dd43-4915-8847-8fe03d64bfa8
+  ORCH_USER_KEY: rt_3265AA846D107CE9FD630B28841B22363FC5F8A507C21BC1C27B3D4C34ADCCE1-1 and uipatntvskhu
   ORCH_ACC_NAME: uipatntvskhu
 
 jobs:
