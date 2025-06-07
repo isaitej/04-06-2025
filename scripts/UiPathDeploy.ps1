@@ -201,6 +201,22 @@ $ParamList.Add("`"$packages_path`"")
 $ParamList.Add($orchestrator_url)
 $ParamList.Add($orchestrator_tenant)
 
+if($accountForApp -ne ""){
+    $ParamList.Add("--accountForApp")
+    $ParamList.Add($accountForApp)
+}
+if($applicationId -ne ""){
+    $ParamList.Add("--applicationId")
+    $ParamList.Add($applicationId)
+}
+if($applicationSecret -ne ""){
+    $ParamList.Add("--applicationSecret")
+    $ParamList.Add($applicationSecret)
+}
+if($applicationScope -ne ""){
+    $ParamList.Add("--applicationScope")
+    $ParamList.Add("`"$applicationScope`"")
+}
 if($account_name -ne ""){
     $ParamList.Add("--accountName")
     $ParamList.Add($account_name)
