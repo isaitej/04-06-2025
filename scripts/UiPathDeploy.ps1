@@ -201,61 +201,41 @@ $ParamList.Add("`"$packages_path`"")
 $ParamList.Add($orchestrator_url)
 $ParamList.Add($orchestrator_tenant)
 
-if($accountForApp -ne ""){
-    $ParamList.Add("--accountForApp")
-    $ParamList.Add($accountForApp)
-}
-if($applicationId -ne ""){
-    $ParamList.Add("--applicationId")
-    $ParamList.Add($applicationId)
-}
-if($applicationSecret -ne ""){
-    $ParamList.Add("--applicationSecret")
-    $ParamList.Add($applicationSecret)
-}
-if($applicationScope -ne ""){
-    $ParamList.Add("--applicationScope")
-    $ParamList.Add("`"$applicationScope`"")
-}
 if($account_name -ne ""){
-    $ParamList.Add("--accountName")
+    $ParamList.Add("-a")
     $ParamList.Add($account_name)
 }
 if($UserKey -ne ""){
-    $ParamList.Add("--token")
+    $ParamList.Add("-t")
     $ParamList.Add($UserKey)
+
 }
 if($orchestrator_user -ne ""){
-    $ParamList.Add("--username")
+    $ParamList.Add("-u")
     $ParamList.Add($orchestrator_user)
 }
 if($orchestrator_pass -ne ""){
-    $ParamList.Add("--password")
+    $ParamList.Add("-p")
     $ParamList.Add($orchestrator_pass)
 }
 if($folder_organization_unit -ne ""){
-    $ParamList.Add("--organizationUnit")
-    $ParamList.Add("`"$folder_organization_unit`"")
+    $ParamList.Add("-o")
+    $ParamList.Add($folder_organization_unit)
 }
 if($environment_list -ne ""){
-    $ParamList.Add("--environments")
-    $ParamList.Add("`"$environment_list`"")
+    $ParamList.Add("-e")
+    $ParamList.Add($environment_list)
 }
 
 if($language -ne ""){
-    $ParamList.Add("--language")
+    $ParamList.Add("-l")
     $ParamList.Add($language)
 }
 
 if($disableTelemetry -ne ""){
-    $ParamList.Add("--disableTelemetry")
+    $ParamList.Add("-y")
     $ParamList.Add($disableTelemetry)
 }
-if($entryPoints -ne ""){
-    $ParamList.Add("--entryPointsPath")
-    $ParamList.Add("`"$entryPoints`"")
-}
-
 #mask sensitive info before logging 
 $ParamMask = New-Object 'Collections.Generic.List[string]'
 $ParamMask.AddRange($ParamList)
