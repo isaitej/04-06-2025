@@ -7,11 +7,11 @@ on:
 
 env:
   PROJECT_NAME: 04062025
-  PROJECT_FOLDER: Default
-  ORCH_URL: https://cloud.uipath.com/testbfsvyha/NewTenant/
-  ORCH_TENANT: NewTenant
-  ORCH_USER_KEY: be8334e4-cac1-4581-a683-01384ef7f59f
-  ORCH_ACC_NAME: testbfsvyha
+  PROJECT_FOLDER: Shared
+  ORCH_URL: https://cloud.uipath.com/uipatntvskhu/DefaultTenant/
+  ORCH_TENANT: DefaultTenant
+  ORCH_USER_KEY: 9765da03-dd43-4915-8847-8fe03d64bfa8
+  ORCH_ACC_NAME: uipatntvskhu
 
 jobs:
   print-details:
@@ -80,4 +80,4 @@ jobs:
         with:
           name: Artifacts
       - name: Test the Package With Test Cases 
-        run: ${{ github.workspace }}\scripts\\UiPathRunTest.ps1  ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -testset "04062025TestSet"
+        run: ${{ github.workspace }}\scripts\\UiPathRunTest.ps1  ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -testset "Testset"
