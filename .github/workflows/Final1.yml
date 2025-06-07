@@ -1,66 +1,13 @@
-name: mainelopment workflow
-
-on:
-  push:
-    branches:
-      - main
-
 env:
   PROJECT_NAME: 04062025
   PROJECT_FOLDER: Shared
   ORCH_URL: https://cloud.uipath.com/uipatntvskhu/DefaultTenant/
   ORCH_TENANT: DefaultTenant
   ORCH_ACC_NAME: uipatntvskhu
-  CLIENT_ID: 9765da03-dd43-4915-8847-8fe03d64bfa8
-  CLIENT_SECRET: W#fS4(J!tbTZeZ*v
-  SCOPE: OR.Jobs
+  UIPATH_SCOPE: ${{ secrets.UIPATH_SCOPE }}
 
 jobs:
-  print-details:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Echo default environment variables
-        run: |
-          echo "Home: ${HOME}"
-          echo "GITHUB_WORKFLOW: ${GITHUB_WORKFLOW}"
-          echo "GITHUB_ACTIONS: ${GITHUB_ACTIONS}"
-          echo "GITHUB_ACTOR: ${GITHUB_ACTOR}"
-          echo "GITHUB_REPOSITORY: ${GITHUB_REPOSITORY}"
-          echo "GITHUB_EVENT_NAME: ${GITHUB_EVENT_NAME}"
-          echo "GITHUB_WORKSPACE: ${GITHUB_WORKSPACE}"
-          echo "GITHUB_SHA: ${GITHUB_SHA}"
-          echo "GITHUB_REF: ${GITHUB_REF}"
-
-  cleaner:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clean previous workspace
-        run: |
-          echo "Cleaning up previous run"
-          rm -rf "${{ github.workspace }}"
-
-  build-uipath-nuget-package:
-    needs: cleaner
-    runs-on: windows-latest
-    steps: 
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Build NuGet Package
-        shell: pwsh
-        run: |
-          pwsh "${{ github.workspace }}\scripts\UiPathPack.ps1" `
-            "${{ github.workspace }}\project.json" `
-            -destination_folder "${{ github.workspace }}\package"
-
-      - name: Upload UiPath Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Artifacts
-          path: |
-            package/*
-            scripts/*.ps1
-
+  ...
   publish-uipath-nuget-package:
     needs: build-uipath-nuget-package
     runs-on: windows-latest
@@ -70,35 +17,65 @@ jobs:
         with:
           name: Artifacts
 
-      - name: Publish Nuget Package to Orchestrator
+      - name: Get OAuth Access Token
+        id: get_token
         shell: pwsh
         run: |
+          $body = @{
+            grant_type = "client_credentials"
+            client_id = "${{ secrets.UIPATH_CLIENT_ID }}"
+            client_secret = "${{ secrets.UIPATH_CLIENT_SECRET }}"
+            scope = "${{ secrets.UIPATH_SCOPE }}"
+          }
+          $response = Invoke-RestMethod -Uri "https://cloud.uipath.com/identity_/connect/token" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body $body
+          "access_token=$($response.access_token)" >> $env:GITHUB_OUTPUT
+
+      - name: Publish Nuget Package to main
+        shell: pwsh
+        run: |
+          $token = "${{ steps.get_token.outputs.access_token }}"
           pwsh "${{ github.workspace }}\scripts\UiPathDeploy.ps1" `
             "${{ github.workspace }}\package" `
-            "https://cloud.uipath.com/uipatntvskhu/DefaultTenant/" `
-            "DefaultTenant" `
-            -accountForApp "uipatntvskhu" `
-            -applicationId "9765da03-dd43-4915-8847-8fe03d64bfa8" `
-            -applicationSecret "W#fS4(J!tbTZeZ*v" `
-            -applicationScope "OR.Jobs" `
-            -folder_organization_unit "Shared"
+            "${{env.ORCH_URL}}" `
+            "${{env.ORCH_TENANT}}" `
+            -Token $token `
+            -account_name "${{env.ORCH_ACC_NAME}}" `
+            -folder_organization_unit "${{env.PROJECT_FOLDER}}"
 
   test-uipath-published-package:
     needs: publish-uipath-nuget-package
-    runs-on: windows-latest
+    runs-on: windows-latest  
     steps: 
       - name: Download UiPath Artifacts
         uses: actions/download-artifact@v4
         with:
           name: Artifacts
 
-      - name: Test the Package With Test Cases
+      - name: Get OAuth Access Token
+        id: get_token
+        shell: pwsh
         run: |
+          $body = @{
+            grant_type = "client_credentials"
+            client_id = "${{ secrets.UIPATH_CLIENT_ID }}"
+            client_secret = "${{ secrets.UIPATH_CLIENT_SECRET }}"
+            scope = "${{ secrets.UIPATH_SCOPE }}"
+          }
+          $response = Invoke-RestMethod -Uri "https://cloud.uipath.com/identity_/connect/token" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body $body
+          "access_token=$($response.access_token)" >> $env:GITHUB_OUTPUT
+
+      - name: Test the Package With Test Cases 
+        run: |
+          $token = "${{ steps.get_token.outputs.access_token }}"
           pwsh "${{ github.workspace }}\scripts\UiPathRunTest.ps1" `
-            "https://cloud.uipath.com/uipatntvskhu/DefaultTenant/" `
-            "DefaultTenant" `
-            -accountForApp "uipatntvskhu" `
-            -applicationId "9765da03-dd43-4915-8847-8fe03d64bfa8" `
-            -applicationSecret "W#fS4(J!tbTZeZ*v" `
-            -applicationScope "OR.Jobs" `
+            "${{env.ORCH_URL}}" `
+            "${{env.ORCH_TENANT}}" `
+            -Token $token `
+            -account_name "${{env.ORCH_ACC_NAME}}" `
             -testset "Testset"
