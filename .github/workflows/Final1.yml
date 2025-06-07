@@ -10,8 +10,10 @@ env:
   PROJECT_FOLDER: Shared
   ORCH_URL: https://cloud.uipath.com/uipatntvskhu/DefaultTenant/
   ORCH_TENANT: DefaultTenant
-  ORCH_USER_KEY: rt_3265AA846D107CE9FD630B28841B22363FC5F8A507C21BC1C27B3D4C34ADCCE1-1 and uipatntvskhu
   ORCH_ACC_NAME: uipatntvskhu
+  CLIENT_ID: 9765da03-dd43-4915-8847-8fe03d64bfa8
+  CLIENT_SECRET: W#fS4(J!tbTZeZ*v
+  SCOPE: OR.Jobs
 
 jobs:
   print-details:
@@ -67,10 +69,35 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Artifacts
+
+      - name: Get OAuth Access Token
+        id: get_token
+        shell: pwsh
+        run: |
+          $body = @{
+            grant_type    = "client_credentials"
+            client_id     = "${{ env.CLIENT_ID }}"
+            client_secret = "${{ env.CLIENT_SECRET }}"
+            scope         = "${{ env.SCOPE }}"
+          }
+          $response = Invoke-RestMethod -Uri "https://cloud.uipath.com/identity_/connect/token" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body $body
+          "access_token=$($response.access_token)" >> $env:GITHUB_OUTPUT
+
       - name: Publish Nuget Package to main
         shell: pwsh
-        run: ${{ github.workspace }}\scripts\UiPathDeploy.ps1 ${{ github.workspace }}\package ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -folder_organization_unit ${{env.PROJECT_FOLDER}}
-   
+        run: |
+          $token = "${{ steps.get_token.outputs.access_token }}"
+          pwsh "${{ github.workspace }}\scripts\UiPathDeploy.ps1" `
+            "${{ github.workspace }}\package" `
+            "${{ env.ORCH_URL }}" `
+            "${{ env.ORCH_TENANT }}" `
+            -Token $token `
+            -account_name "${{ env.ORCH_ACC_NAME }}" `
+            -folder_organization_unit "${{ env.PROJECT_FOLDER }}"
+
   test-uipath-published-package:
     needs: publish-uipath-nuget-package
     runs-on: windows-latest  
@@ -79,5 +106,30 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Artifacts
+
+      - name: Get OAuth Access Token
+        id: get_token
+        shell: pwsh
+        run: |
+          $body = @{
+            grant_type    = "client_credentials"
+            client_id     = "${{ env.CLIENT_ID }}"
+            client_secret = "${{ env.CLIENT_SECRET }}"
+            scope         = "${{ env.SCOPE }}"
+          }
+          $response = Invoke-RestMethod -Uri "https://cloud.uipath.com/identity_/connect/token" `
+            -Method Post `
+            -ContentType "application/x-www-form-urlencoded" `
+            -Body $body
+          "access_token=$($response.access_token)" >> $env:GITHUB_OUTPUT
+
       - name: Test the Package With Test Cases 
-        run: ${{ github.workspace }}\scripts\\UiPathRunTest.ps1  ${{env.ORCH_URL}} ${{env.ORCH_TENANT}} -UserKey ${{env.ORCH_USER_KEY}} -account_name ${{env.ORCH_ACC_NAME}} -testset "Testset"
+        shell: pwsh
+        run: |
+          $token = "${{ steps.get_token.outputs.access_token }}"
+          pwsh "${{ github.workspace }}\scripts\UiPathRunTest.ps1" `
+            "${{ env.ORCH_URL }}" `
+            "${{ env.ORCH_TENANT }}" `
+            -Token $token `
+            -account_name "${{ env.ORCH_ACC_NAME }}" `
+            -testset "Testset"
