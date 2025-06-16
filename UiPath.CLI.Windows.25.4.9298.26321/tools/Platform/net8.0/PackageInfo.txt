@@ -1,0 +1,4 @@
+System.Activities.Presentation.Common.dll,System.Activities.Presentation.Common,6.0.0-20250527.3
+System.Activities.ViewModels.dll,System.Activities.ViewModels,1.0.0-20250519.7
+ConnectionClient.dll,UiPath.ConnectionClient,2.0.11-20241210.3
+UiPath.Platform.dll,UiPath.Platform,25.6.0-alpha.9007301
