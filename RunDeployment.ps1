@@ -1,35 +1,82 @@
-Write-Output "===== Starting UiPath deployment ====="
+# Final UiPath Deployment Script - Using Jenkins Credential IDs Exactly
+# Filename: RunDeployment.ps1
 
-# Define paths
-$projectJsonPath = "$PSScriptRoot\project.json"
-$outputPath = "$PSScriptRoot\output"
-$uipcliExe = "$PSScriptRoot\tools\uipcli.exe"
-$packageName = "UiPath.Github.Action"
+param (
+    [string]$OrchestratorUrl     = $env.'orch-url',
+    [string]$AccountLogicalName  = $env.'account-logical-name',
+    [string]$TenantLogicalName   = $env.'tenant-logical-name',
+    [string]$FolderName          = $env.'folder-name',
+    [string]$AppId               = $env.'app-id',
+    [string]$AppSecret           = $env.'app-secret',
+    [string]$PackagePath         = "./project.json"
+)
 
-# Step 1: Pack the project
-Write-Output "Packing UiPath project..."
-& $uipcliExe package pack "$projectJsonPath" -o "$outputPath" --autoVersion
+Write-Host "Authenticating with UiPath Orchestrator..."
 
-# Step 2: Get the .nupkg file
-$nupkg = Get-ChildItem -Path $outputPath -Filter "$packageName*.nupkg" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $nupkg) {
-    Write-Error "No .nupkg file found after packing!"
+# Step 1: Get access token
+$body = @{
+    grant_type    = "client_credentials"
+    client_id     = $AppId
+    client_secret = $AppSecret
+    scope         = "OR.Jobs OR.Folders OR.Machines OR.Robots OR.Execution OR.Assets"
+}
+
+$tokenResponse = Invoke-RestMethod -Uri "$OrchestratorUrl/identity_/connect/token" `
+                                   -Method Post `
+                                   -Body $body `
+                                   -ContentType "application/x-www-form-urlencoded"
+
+$token = $tokenResponse.access_token
+
+if (-not $token) {
+    Write-Error "Authentication failed. Please check credentials."
     exit 1
 }
-Write-Output "Package created: $($nupkg.FullName)"
 
-# Step 3: Deploy to Orchestrator
-Write-Output "Deploying to Orchestrator..."
-& $uipcliExe package deploy `
-    "$($nupkg.FullName)" `
-    "$env:ORCH_URL" `
-    "$env:TENANT_LOGICAL_NAME" `
-    -a "$env:ACCOUNT_LOGICAL_NAME" `
-    -I "$env:APP_ID" `
-    -S "$env:APP_SECRET" `
-    --applicationScope "OR.Folders OR.Execution OR.Assets OR.Robots OR.Jobs" `
-    -o "$env:FOLDER_NAME" `
-    --traceLevel Information `
-    --entryPointsPath "Main.xaml"
+Write-Host "Token retrieved successfully."
 
-Write-Output "===== Deployment Completed ====="
+# Step 2: Prepare headers
+$headers = @{
+    Authorization                 = "Bearer $token"
+    "X-UIPATH-TenantName"         = $TenantLogicalName
+    "X-UIPATH-OrganizationUnitId" = $FolderName
+}
+
+# Step 3: Pack project into .nupkg
+Write-Host "Packing project..."
+
+& "C:\Program Files\UiPath\Studio\UiRobot.exe" pack $PackagePath -o "$(pwd)\Output"
+
+# Step 4: Extract project name and version
+$projectData = Get-Content $PackagePath | ConvertFrom-Json
+$packageName = $projectData.name
+$version     = $projectData.projectVersion
+
+$packageFilePath = "$(pwd)\Output\$packageName.$version.nupkg"
+
+if (-not (Test-Path $packageFilePath)) {
+    Write-Error "Package not found: $packageFilePath"
+    exit 1
+}
+
+# Step 5: Upload the package
+Write-Host "Uploading package..."
+
+$uploadUri = "$OrchestratorUrl/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage"
+
+$form = @{
+    file       = Get-Item $packageFilePath
+    folderPath = "/"
+}
+
+$response = Invoke-RestMethod -Uri $uploadUri `
+                              -Headers $headers `
+                              -Method Post `
+                              -Form $form
+
+if ($response -ne $null) {
+    Write-Host "Package uploaded successfully."
+} else {
+    Write-Error "Package upload failed."
+    exit 1
+}

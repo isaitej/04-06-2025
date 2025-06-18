@@ -1,6 +1,0 @@
-Microsoft.Win32.SystemEvents.dll,Microsoft.Win32.SystemEvents,6.0.0
-Microsoft.Win32.SystemEvents.dll,Microsoft.Win32.SystemEvents,6.0.0
-System.Activities.Presentation.Common.dll,System.Activities.Presentation.Common,6.0.0-20250324.5
-System.Activities.ViewModels.dll,System.Activities.ViewModels,1.0.0-20250124.2
-ConnectionClient.dll,UiPath.ConnectionClient,2.0.11-20241210.3
-UiPath.Platform.dll,UiPath.Platform,25.0.0-alpha.8481469
